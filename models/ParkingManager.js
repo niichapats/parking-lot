@@ -24,7 +24,6 @@ class ParkingManager {
 
         vehicle._id = vehicleData._id;
 
-        // ✅ เรียกผ่าน method ที่จัดไว้ให้ใน ParkingLot
         this.lot.setVehicleAt(spot.level, spot.row, spot.index, vehicle);
       }
     }
@@ -32,10 +31,6 @@ class ParkingManager {
 
   addVehicle(vehicle) {
     const spots = this.lot.parkVehicle(vehicle);
-    console.log(" S P O T : ", spots)
-    if (spots && spots.length) {
-      console.log("✅ Spot to return:", spots.map(s => `${s.level} ${s.index} ${vehicle.constructor.name}`));
-    }
     return spots || null;
   }
 
