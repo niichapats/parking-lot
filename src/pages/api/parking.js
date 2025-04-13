@@ -40,6 +40,18 @@ export default async function handler(req, res) {
         const dbSpots = await ParkingSpot.find({}).populate('vehicle');
         ParkingManager.initFromData(dbSpots);
 
+        // ✅ เช็กก่อนว่าทะเบียนนี้จอดแล้วหรือยัง
+        const alreadyParked = dbSpots.some(
+            spot => spot.vehicle?.licensePlate === licensePlate
+        );
+        
+        if (alreadyParked) {
+            return res.status(400).json({
+            success: false,
+            message: `Vehicle with license plate "${licensePlate}" is already parked.`,
+            });
+        }
+
         // ✅ Add vehicle (returns list of spot(s) assigned)
         const parkedSpots = ParkingManager.addVehicle(vehicle);
         console.log("P A R K S P O T : ", parkedSpots)
