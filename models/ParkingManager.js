@@ -23,13 +23,17 @@ class ParkingManager {
         else vehicle = new Vehicle(vehicleData.licensePlate, vehicleData.size);
 
         vehicle._id = vehicleData._id;
-        this.lot.parkVehicle(vehicle);
+
+        // ✅ กำหนด vehicle ตรงลงไปใน spot ที่โหลดมาจาก DB แทนการใช้ parkVehicle
+        const row = this.lot.levels[spot.level].rows[spot.row];
+        row[spot.index].vehicle = vehicle;
       }
     }
   }
 
   addVehicle(vehicle) {
-    const spots = this.lot.parkVehicle(vehicle); // return เป็น array
+    const spots = this.lot.parkVehicle(vehicle);
+    console.log(" S P O T : ", spots)
     if (spots && spots.length) {
       console.log("✅ Spot to return:", spots.map(s => `${s.level} ${s.index} ${vehicle.constructor.name}`));
     }

@@ -28,6 +28,7 @@ export class Level {
     console.log("🚗 เข้า parkVehicle | ป้ายทะเบียน:", vehicle.licensePlate, "| ขนาด:", vehicle.size);
 
     for (const row of this.rows) {
+      console.log("ROW : ",row)
       if (vehicle.size === VehicleSize.LARGE) {
         console.log("----BUS PARKING----")
         const group = this._find5ConsecutiveLargeSpots(row);
@@ -40,7 +41,8 @@ export class Level {
           group.forEach(s => {
             s.vehicle = sharedVehicle;
           });
-          return group; // ✅ สำคัญ: return ทั้ง 5 ช่อง
+          console.log("FINISH PARKING BUS")
+          return group;
         }
       } else {
         console.log("----NORAML PARKING----")
@@ -49,8 +51,9 @@ export class Level {
 
           if (spot.vehicle === null && this._canFit(vehicle.size, spot.spotSize)) {
             console.log("✅ จอดได้ที่จุด:", spot.index);
+            console.log("")
             spot.vehicle = vehicle;
-            return [spot]; // ✅ ห่อใน array ให้ใช้เหมือน bus ได้
+            return [spot];
           }
         }
       }

@@ -42,6 +42,7 @@ export default async function handler(req, res) {
 
         // ✅ Add vehicle (returns list of spot(s) assigned)
         const parkedSpots = ParkingManager.addVehicle(vehicle);
+        console.log("P A R K S P O T : ", parkedSpots)
         if (!parkedSpots || parkedSpots.length === 0) {
           return res.status(404).json({ success: false, message: "No available spot" });
         }
