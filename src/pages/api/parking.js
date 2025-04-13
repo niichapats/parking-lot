@@ -66,7 +66,8 @@ export default async function handler(req, res) {
           }
         }
 
-        console.log("📌 Updated DB spots for:", licensePlate, "=>", updated);
+        console.log("📌 Updated DB spots for:", vehicle?.licensePlate ?? 'unknown', "=>", updated);
+
 
         // ✅ Re-sync memory with latest DB state to prevent stale cache
         const freshSpots = await ParkingSpot.find({}).populate('vehicle');

@@ -1,3 +1,4 @@
+import { ParkingSpot } from './ParkingSpot.js';
 import { VehicleSize } from './VehicleSize.js';
 
 export class Level {
@@ -12,13 +13,8 @@ export class Level {
         if (index < 2) size = VehicleSize.MOTORCYCLE;
         else if (index >= spotsPerRow - 5) size = VehicleSize.LARGE;
 
-        rowSpots.push({
-          level: levelNumber,
-          row,
-          index,
-          spotSize: size,
-          vehicle: null
-        });
+        // ✅ ใช้ ParkingSpot class แทน object
+        rowSpots.push(new ParkingSpot(size, levelNumber, row, index));
       }
       this.rows.push(rowSpots);
     }
@@ -28,9 +24,10 @@ export class Level {
     console.log("🚗 เข้า parkVehicle | ป้ายทะเบียน:", vehicle.licensePlate, "| ขนาด:", vehicle.size);
 
     for (const row of this.rows) {
-      console.log("ROW : ",row)
+      console.log("ROW : ", row);
+
       if (vehicle.size === VehicleSize.LARGE) {
-        console.log("----BUS PARKING----")
+        console.log("----BUS PARKING----");
         const group = this._find5ConsecutiveLargeSpots(row);
         if (group) {
           const sharedVehicle = {
@@ -41,17 +38,17 @@ export class Level {
           group.forEach(s => {
             s.vehicle = sharedVehicle;
           });
-          console.log("FINISH PARKING BUS")
+          console.log("FINISH PARKING BUS");
           return group;
         }
       } else {
-        console.log("----NORAML PARKING----")
+        console.log("----NORMAL PARKING----");
         for (let spot of row) {
-          console.log("🛠 ตรวจจุด", spot.index, "| ขนาด:", spot.spotSize, "| มีรถไหม:", !!spot.vehicle, "รถ: ", spot.vehicle);
+          console.log("🛠 ตรวจจุด", spot.index, "| ขนาด:", spot.type, "| มีรถไหม:", !!spot.vehicle, "รถ: ", spot.vehicle);
 
-          if (spot.vehicle === null && this._canFit(vehicle.size, spot.spotSize)) {
+          if (spot.isAvailable() && this._canFit(vehicle.size, spot.type)) {
+            console.log("🔎 ตรวจขนาด:", vehicle.size, "กับ", spot.type);
             console.log("✅ จอดได้ที่จุด:", spot.index);
-            console.log("")
             spot.vehicle = vehicle;
             return [spot];
           }
@@ -68,7 +65,7 @@ export class Level {
     for (const row of this.rows) {
       for (let spot of row) {
         if (spot.vehicle && spot.vehicle.licensePlate === licensePlate) {
-          spot.vehicle = null;
+          spot.leave();
           removed = true;
         }
       }
@@ -79,19 +76,16 @@ export class Level {
   _find5ConsecutiveLargeSpots(row) {
     for (let i = 0; i <= row.length - 5; i++) {
       const group = row.slice(i, i + 5);
-  
-      const allFree = group.every(s => s.vehicle === null && s.spotSize === VehicleSize.LARGE);
-  
+      const allFree = group.every(s => s.isAvailable() && s.type === VehicleSize.LARGE);
+
       if (allFree) {
         return group;
       }
     }
     return null;
-  }  
+  }
 
   _canFit(vehicleSize, spotSize) {
-    console.log("🔎 ตรวจขนาด:", vehicleSize, "กับ", spotSize);
-
     if (vehicleSize === VehicleSize.MOTORCYCLE) return true;
     if (vehicleSize === VehicleSize.COMPACT) return spotSize !== VehicleSize.MOTORCYCLE;
     if (vehicleSize === VehicleSize.LARGE) return spotSize === VehicleSize.LARGE;

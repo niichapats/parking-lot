@@ -24,9 +24,8 @@ class ParkingManager {
 
         vehicle._id = vehicleData._id;
 
-        // ✅ กำหนด vehicle ตรงลงไปใน spot ที่โหลดมาจาก DB แทนการใช้ parkVehicle
-        const row = this.lot.levels[spot.level].rows[spot.row];
-        row[spot.index].vehicle = vehicle;
+        // ✅ เรียกผ่าน method ที่จัดไว้ให้ใน ParkingLot
+        this.lot.setVehicleAt(spot.level, spot.row, spot.index, vehicle);
       }
     }
   }
@@ -45,9 +44,7 @@ class ParkingManager {
   }
 
   getSpots() {
-    return this.lot.levels.flatMap(level =>
-      level.rows.flatMap(row => row)
-    );
+    return this.lot.getAllSpots();
   }
 }
 
