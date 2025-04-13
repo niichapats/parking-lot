@@ -45,9 +45,9 @@ export class Level {
       } else {
         console.log("----NORAML PARKING----")
         for (let spot of row) {
-          console.log("🛠 ตรวจจุด", spot.index, "| ขนาด:", spot.spotSize, "| มีรถไหม:", !!spot.vehicle);
+          console.log("🛠 ตรวจจุด", spot.index, "| ขนาด:", spot.spotSize, "| มีรถไหม:", !!spot.vehicle, "รถ: ", spot.vehicle);
 
-          if (!spot.vehicle && this._canFit(vehicle.size, spot.spotSize)) {
+          if (spot.vehicle === null && this._canFit(vehicle.size, spot.spotSize)) {
             console.log("✅ จอดได้ที่จุด:", spot.index);
             spot.vehicle = vehicle;
             return [spot]; // ✅ ห่อใน array ให้ใช้เหมือน bus ได้
@@ -76,12 +76,15 @@ export class Level {
   _find5ConsecutiveLargeSpots(row) {
     for (let i = 0; i <= row.length - 5; i++) {
       const group = row.slice(i, i + 5);
-      if (group.every(s => !s.vehicle && s.spotSize === VehicleSize.LARGE)) {
+  
+      const allFree = group.every(s => s.vehicle === null && s.spotSize === VehicleSize.LARGE);
+  
+      if (allFree) {
         return group;
       }
     }
     return null;
-  }
+  }  
 
   _canFit(vehicleSize, spotSize) {
     console.log("🔎 ตรวจขนาด:", vehicleSize, "กับ", spotSize);
