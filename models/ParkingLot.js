@@ -1,25 +1,30 @@
 import { Level } from './Level.js';
 
 export class ParkingLot {
-  constructor(numLevels, numRowsPerLevel, spotsPerRow) {
+  constructor(numLevels, rowsPerLevel, spotsPerRow) {
     this.levels = [];
     for (let i = 0; i < numLevels; i++) {
-      this.levels.push(new Level(i, numRowsPerLevel, spotsPerRow));
+      this.levels.push(new Level(i, rowsPerLevel, spotsPerRow));
     }
   }
 
   parkVehicle(vehicle) {
-    for (const level of this.levels) {
-      if (level.parkVehicle(vehicle)) {
+    for (let level of this.levels) {
+      const spot = level.parkVehicle(vehicle);
+      if (spot) {
+        return spot; // ✅ คืน spot กลับ
+      }
+    }
+    return null;
+  }
+  
+
+  unparkVehicle(licensePlate) {
+    for (let level of this.levels) {
+      if (level.unparkVehicle(licensePlate)) {
         return true;
       }
     }
-    return false; // no spot
-  }
-
-  unparkVehicle(licensePlate) {
-    for (const level of this.levels) {
-      level.unparkVehicle(licensePlate);
-    }
+    return false;
   }
 }

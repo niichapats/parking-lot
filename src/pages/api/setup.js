@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   const spots = [];
 
-  for (let level = 1; level <= levels; level++) {
+  for (let level = 0; level < levels; level++) {
     for (let row = 0; row < rowsPerLevel; row++) {
       for (let index = 0; index < spotsPerRow; index++) {
         let size = VehicleSize.COMPACT;

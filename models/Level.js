@@ -1,61 +1,87 @@
-import { ParkingSpot } from './ParkingSpot.js';
 import { VehicleSize } from './VehicleSize.js';
 
 export class Level {
-  constructor(levelNumber, numRows, spotsPerRow) {
+  constructor(levelNumber, rows, spotsPerRow) {
     this.levelNumber = levelNumber;
     this.rows = [];
 
-    for (let r = 0; r < numRows; r++) {
-      const row = [];
-      for (let i = 0; i < spotsPerRow; i++) {
-        let type = VehicleSize.COMPACT;
-        if (i < 2) type = VehicleSize.MOTORCYCLE;
-        else if (i >= spotsPerRow - 5) type = VehicleSize.LARGE;
-        row.push(new ParkingSpot(type, levelNumber, r, i));
+    for (let row = 0; row < rows; row++) {
+      const rowSpots = [];
+      for (let index = 0; index < spotsPerRow; index++) {
+        let size = VehicleSize.COMPACT;
+        if (index < 2) size = VehicleSize.MOTORCYCLE;
+        else if (index >= spotsPerRow - 5) size = VehicleSize.LARGE;
+
+        rowSpots.push({
+          level: levelNumber,
+          row,
+          index,
+          spotSize: size,
+          vehicle: null
+        });
       }
-      this.rows.push(row);
+      this.rows.push(rowSpots);
     }
   }
 
   parkVehicle(vehicle) {
-    if (vehicle.size === 'large') {
-      return this._parkBus(vehicle);
-    }
-
+    console.log("🚗 เข้า parkVehicle | ป้ายทะเบียน:", vehicle.licensePlate, "| ขนาด:", vehicle.size);
+  
     for (const row of this.rows) {
-      for (const spot of row) {
-        if (spot.park(vehicle)) return true;
-      }
-    }
-
-    return false; // no spot
-  }
-
-  _parkBus(bus) {
-    for (const row of this.rows) {
-      for (let i = 0; i <= row.length - 5; i++) {
-        const segment = row.slice(i, i + 5);
-        const canPark = segment.every(
-          (spot) => spot.type === 'large' && spot.isAvailable()
-        );
-
-        if (canPark) {
-          segment.forEach((spot) => spot.park(bus));
-          return true;
+      if (vehicle.size === VehicleSize.BUS) {
+        const group = this._find5ConsecutiveLargeSpots(row);
+        if (group) {
+          group.forEach(s => s.vehicle = vehicle);
+          return group[0];
+        }
+      } else {
+        for (let spot of row) {
+          console.log("🛠 ตรวจจุด", spot.index, "| ขนาด:", spot.spotSize, "| มีรถไหม:", !!spot.vehicle);
+  
+          if (!spot.vehicle && this._canFit(vehicle.size, spot.spotSize)) {
+            console.log("✅ จอดได้ที่จุด:", spot.index);
+            spot.vehicle = vehicle;
+            return spot;
+          }
         }
       }
     }
-    return false;
+    console.log("❌ ไม่มีที่จอดที่เหมาะสม");
+    return null;
   }
+  
+  
 
   unparkVehicle(licensePlate) {
+    let removed = false;
     for (const row of this.rows) {
-      for (const spot of row) {
-        if (spot.vehicle?.licensePlate === licensePlate) {
-          spot.leave();
+      for (let spot of row) {
+        if (spot.vehicle && spot.vehicle.licensePlate === licensePlate) {
+          spot.vehicle = null;
+          removed = true;
         }
       }
     }
+    return removed;
   }
+
+  _find5ConsecutiveLargeSpots(row) {
+    for (let i = 0; i <= row.length - 5; i++) {
+      const group = row.slice(i, i + 5);
+      if (group.every(s => !s.vehicle && s.spotSize === VehicleSize.LARGE)) {
+        return group;
+      }
+    }
+    return null;
+  }
+
+  _canFit(vehicleSize, spotSize) {
+    console.log("🔎 ตรวจขนาด:", vehicleSize, "กับ", spotSize);
+  
+    if (vehicleSize === VehicleSize.MOTORCYCLE) return true;
+    if (vehicleSize === VehicleSize.COMPACT) return spotSize !== VehicleSize.MOTORCYCLE;
+    if (vehicleSize === VehicleSize.LARGE) return spotSize === VehicleSize.LARGE;
+    return false;
+  }
+  
 }
