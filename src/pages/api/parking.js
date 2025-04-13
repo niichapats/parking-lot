@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Vehicle from '@/models/Vehicle.schema';
 import ParkingSpot from '@/models/ParkingSpot.schema';
 import ParkingManager from '@/models/ParkingManager';
+import { Vehicle as VehicleClass } from '@/models/Vehicle';
 
 export default async function handler(req, res) {
   await dbConnect();
@@ -24,56 +25,43 @@ export default async function handler(req, res) {
         if (size === 'car') mappedSize = 'compact';
         if (size === 'bus') mappedSize = 'large';
 
-
-        let vehicle = await Vehicle.findOne({ licensePlate });
-
-        if (!vehicle) {
-          vehicle = await Vehicle.create({ licensePlate,  size: mappedSize });
+        let vehicleDoc = await Vehicle.findOne({ licensePlate });
+        if (!vehicleDoc) {
+          vehicleDoc = await Vehicle.create({ licensePlate, size: mappedSize });
         }
 
-        const dbSpots = await ParkingSpot.find({}).populate('vehicle');
-        ParkingManager.initFromData(dbSpots);
+        const vehicle = new VehicleClass(vehicleDoc.licensePlate, vehicleDoc.size);
+        vehicle._id = vehicleDoc._id;
 
-        const parkedSpot = ParkingManager.addVehicle(licensePlate, size);
+        // สำคัญ: setup memory ใหม่ ไม่ต้องโหลดจาก DB
+        ParkingManager.initFromData([]);
 
-        console.log("🧩 parkedSpot =", parkedSpot);
-        console.log("📍 level =", parkedSpot?.level);
-        console.log("📍 row =", parkedSpot?.row);
-        console.log("📍 index =", parkedSpot?.index);
-
-        if (!parkedSpot) {
+        const parkedSpots = ParkingManager.addVehicle(vehicle);
+        if (!parkedSpots) {
           return res.status(404).json({ success: false, message: "No available spot" });
         }
 
-        console.log("🎯 PARK VEHICLE:", licensePlate, size);
-        console.log("➡️  vehicle._id = ", vehicle._id);
-        console.log("📌 parked at spot = ", parkedSpot);
+        const allSpots = ParkingManager.getSpots();
 
-        // await ParkingSpot.findOneAndUpdate(
-        //   { level: parkedSpot.level, row: parkedSpot.row, index: parkedSpot.index },
-        //   { vehicle: vehicle._id },
-        //   { new: true }
-        // );
-
-        const spot = await ParkingSpot.findOne({
-            level: parkedSpot.level,
-            row: parkedSpot.row,
-            index: parkedSpot.index
-          });
-          
-          if (!spot) {
-            console.error('❌ ไม่เจอ ParkingSpot ใน Mongo สำหรับตำแหน่งนี้:', parkedSpot);
-            return res.status(500).json({ success: false, error: 'Cannot find spot in DB' });
+        // แจก _id ให้ครบ
+        for (const spot of allSpots) {
+          if (spot.vehicle && spot.vehicle.licensePlate === licensePlate) {
+            spot.vehicle._id = vehicle._id;
           }
-          
-          spot.vehicle = vehicle._id;
-          await spot.save();
-          
-          console.log("✅ Vehicle saved in spot:", spot);
-          
-          
-          
+        }
 
+        const updated = [];
+        for (const spot of allSpots) {
+          if (spot.vehicle && spot.vehicle.licensePlate === licensePlate) {
+            await ParkingSpot.findOneAndUpdate(
+              { level: spot.level, row: spot.row, index: spot.index },
+              { vehicle: vehicle._id }
+            );
+            updated.push(`${spot.level}-${spot.row}-${spot.index}`);
+          }
+        }
+
+        console.log("📌 Updated DB spots for:", licensePlate, "=>", updated);
         return res.status(201).json({ success: true });
       } catch (err) {
         console.error('❌ Parking error:', err);
