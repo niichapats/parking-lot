@@ -10,7 +10,7 @@ export default function Home() {
       const res = await fetch('/api/parking');
       const data = await res.json();
 
-      console.log("🚀 Initial GET /api/parking =>", data);
+      console.log("Initial GET /api/parking =>", data);
 
       if ((data.spots || []).length === 0) {
         await fetch('/api/setup', { method: 'POST' });
@@ -27,7 +27,7 @@ export default function Home() {
     const res = await fetch('/api/parking');
     const data = await res.json();
 
-    console.log("🟢 Fetched spots:", data);
+    console.log("Fetched spots:", data);
     setSpots(data.spots || []);
   }
 
@@ -41,7 +41,7 @@ export default function Home() {
     });
 
     const result = await res.json();
-    console.log("📥 POST /api/parking response:", result);
+    console.log("POST /api/parking response:", result);
 
     if (!result.success) {
       alert("❌ Parking failed: " + (result.message || result.error));
@@ -52,7 +52,7 @@ export default function Home() {
   }
 
   async function handleUnpark() {
-    console.log("🛑 Unparking:", unparkPlate);
+    console.log("Unparking:", unparkPlate);
 
     const res = await fetch('/api/parking', {
       method: 'DELETE',
@@ -61,7 +61,7 @@ export default function Home() {
     });
 
     const result = await res.json();
-    console.log("📤 DELETE /api/parking response:", result);
+    console.log("DELETE /api/parking response:", result);
 
     if (!result.success) {
       alert("❌ Unpark failed: " + (result.message || result.error));
@@ -78,35 +78,37 @@ export default function Home() {
     return acc;
   }, {});
 
-  console.log("📊 Grouped Spots by Level:", groupedByLevel);
+  console.log("Grouped Spots by Level:", groupedByLevel);
 
   return (
     <div className="p-6">
-      <button
-        className="bg-yellow-500 text-white px-4 py-2 rounded mb-4"
-        onClick={async () => {
-          const res = await fetch('/api/setup', { method: 'POST' });
-          const result = await res.json();
-          console.log("🔁 Manual Setup Result:", result);
-          alert('Setup complete');
-          fetchSpots();
-        }}
-      >
-        🔧 Setup Parking Lot
-      </button>
+      <div className="flex justify-end">
+        <button
+          className="bg-indigo-200 text-indigo-800 px-4 py-2 rounded mb-4"
+          onClick={async () => {
+            const res = await fetch('/api/setup', { method: 'POST' });
+            const result = await res.json();
+            console.log("🔁 Manual Setup Result:", result);
+            alert('Setup complete');
+            fetchSpots();
+          }}
+        >
+          Setup Parking Lot
+        </button>
+      </div>
 
-      <h1 className="text-2xl font-bold mb-4">🚗 Parking Lot System</h1>
+      <h1 className="text-4xl font-bold text-center mb-10">🚗 Parking Lot System</h1>
 
-      <div className="mb-6 p-4 border rounded bg-gray-50">
-        <h2 className="font-semibold mb-2">📝 Park a Vehicle</h2>
+      <div className="mb-6 p-4 border border-emerald-700 rounded-xl bg-green-50">
+        <h2 className="font-semibold text-black mb-2">Park a Vehicle</h2>
         <input
-          className="border p-2 mr-2"
+          className="border border-black placeholder-gray-500 p-2 mr-2 rounded-md"
           placeholder="License Plate"
           value={form.licensePlate}
           onChange={(e) => setForm({ ...form, licensePlate: e.target.value })}
         />
         <select
-          className="border p-2 mr-2"
+          className="border border-y-gray-500 p-2 mr-2 rounded-md"
           value={form.size}
           onChange={(e) => setForm({ ...form, size: e.target.value })}
         >
@@ -115,23 +117,23 @@ export default function Home() {
           <option value="bus">Bus</option>
         </select>
         <button
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          className="bg-emerald-300 text-emerald-900 px-4 py-2 rounded"
           onClick={handlePark}
         >
           Park
         </button>
       </div>
 
-      <div className="mb-6 p-4 border rounded bg-gray-50">
-        <h2 className="font-semibold mb-2">🛑 Unpark a Vehicle</h2>
+      <div className="mb-6 p-4 border border-pink-800 rounded-xl bg-pink-50">
+        <h2 className="font-semibold text-black border-black mb-2">Unpark a Vehicle</h2>
         <input
-          className="border p-2 mr-2"
+          className="border border-black placeholder-gray-500 p-2 mr-2 rounded-md"
           placeholder="License Plate"
           value={unparkPlate}
           onChange={(e) => setUnparkPlate(e.target.value)}
         />
         <button
-          className="bg-red-500 text-white px-4 py-2 rounded"
+          className="bg-pink-300 text-pink-950 px-4 py-2 rounded"
           onClick={handleUnpark}
         >
           Unpark
@@ -140,7 +142,7 @@ export default function Home() {
 
       {Object.keys(groupedByLevel).map((level) => (
         <div key={level} className="mb-8">
-          <h3 className="text-lg font-semibold mb-2">🧱 {level}</h3>
+          <h3 className="text-lg font-semibold mb-2">{level}</h3>
           <div className="grid grid-cols-10 gap-2">
             {groupedByLevel[level].map((spot) => {
               console.log("🔎 spot", spot.level, spot.index, "vehicle:", spot.vehicle);
@@ -150,7 +152,7 @@ export default function Home() {
                   key={`${spot.level}-${spot.row}-${spot.index}`}
                   className={`p-3 text-center text-sm rounded shadow-md transition-all duration-150
                     ${spot.vehicle ? 
-                      (spot.vehicle.size === 'large' ? 'bg-red-700 text-white' : 'bg-red-400 text-white') 
+                      (spot.vehicle.size === 'large' ? 'bg-red-400 text-white' : 'bg-red-300 text-white') 
                       : 'bg-green-300 text-black'
                     }`}
                 >
