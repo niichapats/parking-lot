@@ -40,9 +40,20 @@ export default async function handler(req, res) {
         const dbSpots = await ParkingSpot.find({}).populate('vehicle');
         ParkingManager.initFromData(dbSpots);
 
+        // ✅ Check duplicate license plate
+        const alreadyParked = dbSpots.some(
+            spot => spot.vehicle?.licensePlate === licensePlate
+        );
+        
+        if (alreadyParked) {
+            return res.status(400).json({
+            success: false,
+            message: `Vehicle with license plate "${licensePlate}" is already parked.`,
+            });
+        }
+
         // ✅ Add vehicle (returns list of spot(s) assigned)
         const parkedSpots = ParkingManager.addVehicle(vehicle);
-        console.log("P A R K S P O T : ", parkedSpots)
         if (!parkedSpots || parkedSpots.length === 0) {
           return res.status(404).json({ success: false, message: "No available spot" });
         }
@@ -62,11 +73,12 @@ export default async function handler(req, res) {
               { level: spot.level, row: spot.row, index: spot.index },
               { vehicle: vehicle._id }
             );
-            updated.push(`${spot.level}-${spot.row}-${spot.index}`);
+            updated.push(`${spot.level+1}-${spot.row+1}-${spot.index}`);
           }
         }
 
-        console.log("📌 Updated DB spots for:", licensePlate, "=>", updated);
+        console.log("-- Updated DB spots for:", vehicle?.licensePlate ?? 'unknown', "=>", updated);
+
 
         // ✅ Re-sync memory with latest DB state to prevent stale cache
         const freshSpots = await ParkingSpot.find({}).populate('vehicle');

@@ -31,4 +31,8 @@ export class ParkingSpot {
   isAvailable() {
     return this.vehicle === null;
   }
+
+  toString() {
+    return `Spot(${this.level}-${this.row}-${this.index} | ${this.type} | ${this.vehicle ? this.vehicle.licensePlate : 'ว่าง'})`;
+  }
 }

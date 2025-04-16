@@ -24,19 +24,13 @@ class ParkingManager {
 
         vehicle._id = vehicleData._id;
 
-        // ✅ กำหนด vehicle ตรงลงไปใน spot ที่โหลดมาจาก DB แทนการใช้ parkVehicle
-        const row = this.lot.levels[spot.level].rows[spot.row];
-        row[spot.index].vehicle = vehicle;
+        this.lot.setVehicleAt(spot.level, spot.row, spot.index, vehicle);
       }
     }
   }
 
   addVehicle(vehicle) {
     const spots = this.lot.parkVehicle(vehicle);
-    console.log(" S P O T : ", spots)
-    if (spots && spots.length) {
-      console.log("✅ Spot to return:", spots.map(s => `${s.level} ${s.index} ${vehicle.constructor.name}`));
-    }
     return spots || null;
   }
 
@@ -45,9 +39,7 @@ class ParkingManager {
   }
 
   getSpots() {
-    return this.lot.levels.flatMap(level =>
-      level.rows.flatMap(row => row)
-    );
+    return this.lot.getAllSpots();
   }
 }
 
