@@ -14,7 +14,7 @@ export default function Home() {
 
       if ((data.spots || []).length === 0) {
         await fetch('/api/setup', { method: 'POST' });
-        console.log('🔧 Auto setup complete');
+        console.log('Auto setup complete');
       }
 
       fetchSpots();
@@ -32,7 +32,7 @@ export default function Home() {
   }
 
   async function handlePark() {
-    console.log("🚗 Parking:", form);
+    console.log("Parking:", form);
 
     const res = await fetch('/api/parking', {
       method: 'POST',
@@ -145,7 +145,7 @@ export default function Home() {
           <h3 className="text-lg font-semibold mb-2">{level}</h3>
           <div className="grid grid-cols-10 gap-2">
             {groupedByLevel[level].map((spot) => {
-              console.log("🔎 spot", spot.level, spot.index, "vehicle:", spot.vehicle);
+              console.log("spot", spot.level, spot.index, "vehicle:", spot.vehicle);
 
               return (
                 <div
