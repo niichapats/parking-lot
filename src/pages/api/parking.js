@@ -5,120 +5,119 @@ import ParkingManager from '@/models/ParkingManager';
 import { Vehicle as VehicleClass } from '@/models/Vehicle';
 
 export default async function handler(req, res) {
-  await dbConnect();
-  const { method } = req;
+    await dbConnect();
+    const { method } = req;
 
-  switch (method) {
-    case 'GET':
-      try {
-        const spots = await ParkingSpot.find({}).populate('vehicle');
-        return res.status(200).json({ success: true, spots });
-      } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-      }
+    switch (method) {
+        case 'GET':
+            try {
+                const spots = await ParkingSpot.find({}).populate('vehicle');
+                return res.status(200).json({ success: true, spots });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
 
-    case 'POST':
-      try {
-        const { licensePlate, size } = req.body;
+        case 'POST':
+            try {
+                const { licensePlate, size } = req.body;
 
-        // 🧠 Map UI size to internal model size
-        let mappedSize = size;
-        if (size === 'car') mappedSize = 'compact';
-        if (size === 'bus') mappedSize = 'large';
+                // Map UI size to internal model size
+                let mappedSize = size;
+                if (size === 'car') mappedSize = 'compact';
+                if (size === 'bus') mappedSize = 'large';
 
-        // ✅ Find or create the vehicle in DB
-        let vehicleDoc = await Vehicle.findOne({ licensePlate });
-        if (!vehicleDoc) {
-          vehicleDoc = await Vehicle.create({ licensePlate, size: mappedSize });
-        }
+                // Find or create the vehicle in DB
+                let vehicleDoc = await Vehicle.findOne({ licensePlate });
+                if (!vehicleDoc) {
+                    vehicleDoc = await Vehicle.create({ licensePlate, size: mappedSize });
+                }
 
-        // 🧠 Create class instance (used in logic layer)
-        const vehicle = new VehicleClass(vehicleDoc.licensePlate, vehicleDoc.size);
-        vehicle._id = vehicleDoc._id;
+                // Create class instance (used in logic layer)
+                const vehicle = new VehicleClass(vehicleDoc.licensePlate, vehicleDoc.size);
+                vehicle._id = vehicleDoc._id;
 
-        // 🧠 Load current spots from DB → memory
-        const dbSpots = await ParkingSpot.find({}).populate('vehicle');
-        ParkingManager.initFromData(dbSpots);
+                // Load current spots from DB → memory
+                const dbSpots = await ParkingSpot.find({}).populate('vehicle');
+                ParkingManager.initFromData(dbSpots);
 
-        // ✅ Check duplicate license plate
-        const alreadyParked = dbSpots.some(
-            spot => spot.vehicle?.licensePlate === licensePlate
-        );
-        
-        if (alreadyParked) {
-            return res.status(400).json({
-            success: false,
-            message: `Vehicle with license plate "${licensePlate}" is already parked.`,
-            });
-        }
+                // Check duplicate license plate
+                const alreadyParked = dbSpots.some(
+                    spot => spot.vehicle?.licensePlate === licensePlate
+                );
 
-        // ✅ Add vehicle (returns list of spot(s) assigned)
-        const parkedSpots = ParkingManager.addVehicle(vehicle);
-        if (!parkedSpots || parkedSpots.length === 0) {
-          return res.status(404).json({ success: false, message: "No available spot" });
-        }
+                if (alreadyParked) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Vehicle with license plate "${licensePlate}" is already parked.`,
+                    });
+                }
 
-        // ✅ Sync _id เข้า memory (important for ._id in DB)
-        for (const spot of ParkingManager.getSpots()) {
-          if (spot.vehicle && spot.vehicle.licensePlate === licensePlate) {
-            spot.vehicle._id = vehicle._id;
-          }
-        }
+                // Add vehicle (returns list of spot(s) assigned)
+                const parkedSpots = ParkingManager.addVehicle(vehicle);
+                if (!parkedSpots || parkedSpots.length === 0) {
+                    return res.status(404).json({ success: false, message: "No available spot" });
+                }
 
-        // ✅ Update DB slots that are occupied
-        const updated = [];
-        for (const spot of ParkingManager.getSpots()) {
-          if (spot.vehicle && spot.vehicle._id?.toString() === vehicle._id.toString()) {
-            await ParkingSpot.findOneAndUpdate(
-              { level: spot.level, row: spot.row, index: spot.index },
-              { vehicle: vehicle._id }
-            );
-            updated.push(`${spot.level+1}-${spot.row+1}-${spot.index}`);
-          }
-        }
+                // Sync _id เข้า memory (important for ._id in DB)
+                for (const spot of ParkingManager.getSpots()) {
+                    if (spot.vehicle && spot.vehicle.licensePlate === licensePlate) {
+                        spot.vehicle._id = vehicle._id;
+                    }
+                }
 
-        console.log("-- Updated DB spots for:", vehicle?.licensePlate ?? 'unknown', "=>", updated);
+                // Update DB slots that are occupied
+                const updated = [];
+                for (const spot of ParkingManager.getSpots()) {
+                    if (spot.vehicle && spot.vehicle._id?.toString() === vehicle._id.toString()) {
+                        await ParkingSpot.findOneAndUpdate(
+                            { level: spot.level, row: spot.row, index: spot.index },
+                            { vehicle: vehicle._id }
+                        );
+                        updated.push(`${spot.level + 1}-${spot.row + 1}-${spot.index}`);
+                    }
+                }
 
+                console.log("-- Updated DB spots for:", vehicle?.licensePlate ?? 'unknown', "=>", updated);
 
-        // ✅ Re-sync memory with latest DB state to prevent stale cache
-        const freshSpots = await ParkingSpot.find({}).populate('vehicle');
-        ParkingManager.initFromData(freshSpots);
+                // Re-sync memory with latest DB state to prevent stale cache
+                const freshSpots = await ParkingSpot.find({}).populate('vehicle');
+                ParkingManager.initFromData(freshSpots);
 
-        return res.status(201).json({ success: true });
-      } catch (err) {
-        console.error('❌ Parking error:', err);
-        return res.status(500).json({ success: false, error: err.message });
-      }
+                return res.status(201).json({ success: true });
+            } catch (err) {
+                console.error('❌ Parking error:', err);
+                return res.status(500).json({ success: false, error: err.message });
+            }
 
-    case 'DELETE':
-      try {
-        const { licensePlate } = req.body;
+        case 'DELETE':
+            try {
+                const { licensePlate } = req.body;
 
-        const vehicle = await Vehicle.findOne({ licensePlate });
-        if (!vehicle) {
-          return res.status(404).json({ success: false, message: "Vehicle not found" });
-        }
+                const vehicle = await Vehicle.findOne({ licensePlate });
+                if (!vehicle) {
+                    return res.status(404).json({ success: false, message: "Vehicle not found" });
+                }
 
-        const dbSpots = await ParkingSpot.find({}).populate('vehicle');
-        ParkingManager.initFromData(dbSpots);
+                const dbSpots = await ParkingSpot.find({}).populate('vehicle');
+                ParkingManager.initFromData(dbSpots);
 
-        ParkingManager.removeVehicle(licensePlate);
+                ParkingManager.removeVehicle(licensePlate);
 
-        const updatedSpots = ParkingManager.getSpots();
-        for (const spot of updatedSpots) {
-          await ParkingSpot.findOneAndUpdate(
-            { level: spot.level, row: spot.row, index: spot.index },
-            { vehicle: spot.vehicle ? spot.vehicle._id : null }
-          );
-        }
+                const updatedSpots = ParkingManager.getSpots();
+                for (const spot of updatedSpots) {
+                    await ParkingSpot.findOneAndUpdate(
+                        { level: spot.level, row: spot.row, index: spot.index },
+                        { vehicle: spot.vehicle ? spot.vehicle._id : null }
+                    );
+                }
 
-        return res.status(200).json({ success: true });
-      } catch (err) {
-        return res.status(500).json({ success: false, error: err.message });
-      }
+                return res.status(200).json({ success: true });
+            } catch (err) {
+                return res.status(500).json({ success: false, error: err.message });
+            }
 
-    default:
-      res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
-      return res.status(405).end(`Method ${method} Not Allowed`);
-  }
+        default:
+            res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
+            return res.status(405).end(`Method ${method} Not Allowed`);
+    }
 }
